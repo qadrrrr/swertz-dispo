@@ -28,6 +28,26 @@ class TomTomFehler extends Error {
   }
 }
 
+// Nur angemeldete Nutzer: Die Anmeldung wird bei Supabase selbst nachgeprüft
+// (zusätzlich zur Einstellung „Verify JWT“, damit es in jedem Fall sicher ist).
+async function angemeldet(req: Request): Promise<boolean> {
+  const auth = req.headers.get("authorization") ?? "";
+  const apikey = req.headers.get("apikey") ?? "";
+  const basis = Deno.env.get("SUPABASE_URL");
+  if (!basis || !/^Bearer\s+\S+/.test(auth) || !apikey) return false;
+  try {
+    const r = await fetch(`${basis}/auth/v1/user`, {
+      headers: { authorization: auth, apikey },
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!r.ok) return false;
+    const u = await r.json();
+    return typeof u?.id === "string" && u.id.length > 0;
+  } catch {
+    return false;
+  }
+}
+
 const TT = "https://api.tomtom.com";
 
 async function tt(path: string, params: URLSearchParams): Promise<any> {
@@ -184,6 +204,7 @@ const WERKZEUGE: Record<string, (input: any) => Promise<unknown>> = {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return fehler("bad_request", "Nur POST erlaubt.", 405);
+  if (!(await angemeldet(req))) return fehler("not_signed_in", "Bitte in Swertz Dispo anmelden.", 401);
   let body: any;
   try {
     body = await req.json();
