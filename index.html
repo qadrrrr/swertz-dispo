@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Swertz Dispo Prototyp</title>
+<!-- Supabase-Anbindung: greift nur, wenn cloud-config.js ausgefüllt ist und die Seite nicht in Claude läuft -->
+<script src="cloud-config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js"></script>
+<script src="swertz-cloud.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -1341,10 +1345,11 @@ async function profLoad(){
 }
 setTimeout(()=>{if(!PROF.sto&&!PROF.loaded)showLogin()},4000);
 function showLogin(){const L=document.getElementById("login");if(!L||!L.hidden)return;
-  document.getElementById("lGrid").innerHTML=STO.map(s=>{const n=FLEET.filter(f=>f.sto===s.id).length;return '<button class="lsto" data-login="'+s.id+'"><span class="lsq" style="'+dotS(s.col)+'"></span><span><b>'+esc(s.name)+'</b><small>'+esc(s.adr)+' · '+n+' LKW</small></span></button>'}).join("")+
-    '<button class="lsto" data-login="all"><span class="lsq" style="background:conic-gradient('+STO.map((s,i)=>s.col+' '+(i*100/STO.length)+'% '+((i+1)*100/STO.length)+'%').join(",")+');box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)"></span><span><b>Zentrale / Disposition</b><small>Alle Standorte sehen und bearbeiten</small></span></button>';
+  const CL=window.SW_CLOUD&&SW_CLOUD.aktiv?SW_CLOUD:null;
+  document.getElementById("lGrid").innerHTML=STO.filter(s=>!CL||CL.darf(s.id)).map(s=>{const n=FLEET.filter(f=>f.sto===s.id).length;return '<button class="lsto" data-login="'+s.id+'"><span class="lsq" style="'+dotS(s.col)+'"></span><span><b>'+esc(s.name)+'</b><small>'+esc(s.adr)+' · '+n+' LKW</small></span></button>'}).join("")+(CL&&!CL.darf("all")?'':
+    '<button class="lsto" data-login="all"><span class="lsq" style="background:conic-gradient('+STO.map((s,i)=>s.col+' '+(i*100/STO.length)+'% '+((i+1)*100/STO.length)+'%').join(",")+');box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)"></span><span><b>Zentrale / Disposition</b><small>Alle Standorte sehen und bearbeiten</small></span></button>');
   document.getElementById("lRem").checked=PROF.remember!==false;document.getElementById("lOnly").checked=!!PROF.only;
-  document.getElementById("lWho").textContent=ME.id?(NAMES[ME.id]||"deinem Claude-Konto"):"diesem Gerät";
+  document.getElementById("lWho").textContent=CL?CL.name():ME.id?(NAMES[ME.id]||"deinem Claude-Konto"):"diesem Gerät";
   if(ME.id)resolveNames([ME.id]).then(()=>{const w=document.getElementById("lWho");if(w&&NAMES[ME.id])w.textContent=NAMES[ME.id]});
   L.hidden=false;document.body.style.overflow="hidden";
 }
@@ -1357,7 +1362,7 @@ function applyLogin(withToast){
   vsNotifyBacklog();refresh();
 }
 function doLogin(id){PROF.sto=id;PROF.remember=document.getElementById("lRem").checked;PROF.only=id!=="all"&&document.getElementById("lOnly").checked;lsProf();cloudProf();applyLogin(true)}
-function doLogout(){PROF.sto=null;PROF.only=false;lsProf();cloudProf();AF.sto="all";fT="all";fW="all";renderAcct();refresh();showLogin()}
+function doLogout(){if(window.SW_CLOUD&&SW_CLOUD.aktiv){SW_CLOUD.abmelden();return}PROF.sto=null;PROF.only=false;lsProf();cloudProf();AF.sto="all";fT="all";fW="all";renderAcct();refresh();showLogin()}
 function setOnly(v){if(!myS())return;PROF.only=!!v;lsProf();cloudProf();if(!v){fT="all";fW="all";AF.sto="all"}renderAcct();refresh();toast(v?"Es werden nur noch Daten von "+stoName(myS())+" angezeigt.":"Alle Standorte werden angezeigt.")}
 function renderAcct(){
   const b=document.getElementById("acctName");if(!b)return;const m=myS();

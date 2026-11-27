@@ -1,0 +1,19 @@
+{
+  "cleanUrls": false,
+  "rewrites": [
+    { "source": "/supabase/:path*", "destination": "/404-nicht-vorhanden" },
+    { "source": "/CLAUDE.md", "destination": "/404-nicht-vorhanden" }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "Strict-Transport-Security", "value": "max-age=31536000" }
+      ]
+    },
+    { "source": "/sw-blob.js", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] }
+  ]
+}
