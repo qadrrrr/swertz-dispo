@@ -93,7 +93,13 @@
   var gemerkt = jsonGet(localStorage, K_PROFIL);
   function standortVorbelegen(p) {
     // Das Programm liest beim Start „sw_login“ (localStorage = angemeldet bleiben, sessionStorage = nur Sitzung).
-    var v = JSON.stringify({ sto: p.sto, only: !!p.only });
+    var sto = p.sto, nur = !!p.only;
+    // Die Zentrale darf jeden Standort wählen – ihre letzte Wahl bleibt beim Neuladen erhalten.
+    if (p.sto === "all") {
+      var vorher = jsonGet(localStorage, "sw_login") || jsonGet(sessionStorage, "sw_login");
+      if (vorher && /^(all|moe|goc|kle|emm|vie|str|gel)$/.test(String(vorher.sto))) { sto = vorher.sto; nur = !!vorher.only; }
+    }
+    var v = JSON.stringify({ sto: sto, only: nur });
     if (bleiben) { lsSet(localStorage, "sw_login", v); lsDel(sessionStorage, "sw_login"); }
     else { lsSet(sessionStorage, "sw_login", v); lsDel(localStorage, "sw_login"); }
   }
