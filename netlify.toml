@@ -1,0 +1,34 @@
+# Swertz Dispo – Einstellungen für Netlify (kein Bauschritt nötig, die Dateien werden direkt ausgeliefert)
+[build]
+  publish = "."
+
+# Interne Dateien nicht öffentlich ausliefern
+[[redirects]]
+  from = "/supabase/*"
+  to = "/404"
+  status = 404
+  force = true
+[[redirects]]
+  from = "/CLAUDE.md"
+  to = "/404"
+  status = 404
+  force = true
+[[redirects]]
+  from = "/netlify.toml"
+  to = "/404"
+  status = 404
+  force = true
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Strict-Transport-Security = "max-age=31536000"
+
+# Die Lieferschein-Anzeige (Service Worker) muss immer aktuell sein
+[[headers]]
+  for = "/sw-blob.js"
+  [headers.values]
+    Cache-Control = "no-cache"

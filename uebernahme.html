@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Datenübernahme</title>
+<meta name="robots" content="noindex">
+<script src="cloud-config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+  :root{--bg:#F5F6F8;--card:#FFFFFF;--blue:#2878E5;--ink:#202124;--mut:#737780;--rule:#E8EAED;--red:#C5221F;--green:#188038}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:18px/1.5 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding:24px 16px}
+  main{max-width:720px;margin:0 auto}
+  .k{background:var(--card);border:1px solid var(--rule);border-radius:22px;padding:28px;margin-bottom:18px}
+  h1{font-size:30px;margin:0 0 6px}
+  p{color:var(--mut);margin:0 0 14px}
+  .tab{display:inline-block;font-weight:800;letter-spacing:.12em;font-size:13px;color:var(--blue);background:#EAF2FD;border-radius:8px;padding:5px 10px;margin-bottom:12px}
+  button,.file{display:inline-flex;align-items:center;justify-content:center;min-height:56px;padding:0 24px;border:0;border-radius:14px;background:var(--blue);color:#fff;font:inherit;font-weight:700;cursor:pointer}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  input[type=file]{display:none}
+  table{width:100%;border-collapse:collapse;margin:8px 0 18px}
+  td{padding:10px 4px;border-bottom:1px solid var(--rule)}
+  td.r{text-align:right;font-weight:700}
+  .m{margin-top:14px;min-height:24px}
+  .err{color:var(--red)} .ok{color:var(--green)}
+  a{color:var(--blue)}
+</style>
+</head>
+<body>
+<main>
+  <div class="k">
+    <span class="tab">SWERTZ</span>
+    <h1>Datenübernahme</h1>
+    <p>Übernimmt Fahrzeuge, Baustellen, Aufträge, Touren und Vorschläge aus einer Sicherungsdatei (JSON) in die Datenbank.
+       Es werden <b>nur fehlende Einträge hinzugefügt</b> – vorhandene Daten werden nie überschrieben oder gelöscht.</p>
+    <div id="status" class="m">Anmeldung wird geprüft …</div>
+  </div>
+  <div class="k" id="schritt" hidden>
+    <label class="file" for="datei">Sicherungsdatei auswählen</label>
+    <input type="file" id="datei" accept="application/json,.json">
+    <div id="vorschau"></div>
+    <button id="los" hidden>Jetzt übernehmen</button>
+    <div id="ergebnis" class="m" aria-live="polite"></div>
+  </div>
+</main>
+<script>
+(function(){
+  "use strict";
+  var CFG=window.SWERTZ_CLOUD_CONFIG||{};
+  var st=document.getElementById("status");
+  function zeige(html,cls){st.innerHTML=html;st.className="m "+(cls||"")}
+  function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
+  if(!CFG.url||!CFG.anonKey){zeige("Die Datei cloud-config.js ist noch nicht ausgefüllt.","err");return}
+  if(!window.supabase){zeige("Verbindung zur Datenbank konnte nicht geladen werden.","err");return}
+  var speicher=localStorage.getItem("sw_cloud_bleiben")==="0"?sessionStorage:localStorage;
+  var sb=supabase.createClient(CFG.url,CFG.anonKey,{auth:{storage:speicher,storageKey:"sw-dispo-auth",persistSession:true,autoRefreshToken:true}});
+
+  // Reihenfolge wichtig: Aufträge vor Vorschlägen
+  var TABELLEN=[["fahrzeuge","Fahrzeuge"],["baustellen","Baustellen"],["auftraege","Aufträge"],["touren","Touren"],["vorschlaege","Vorschläge"]];
+  // Auch die bisherigen Gerätespeicher-Namen werden erkannt
+  var ALIAS={sw_fleet:"fahrzeuge",sw_bs:"baustellen",sw_orders:"auftraege",sw_tours:"touren",sw_vs:"vorschlaege"};
+
+  function kennung(tab,x){
+    if(x&&typeof x.id==="string"&&x.daten&&typeof x.daten==="object")return {id:x.id,daten:x.daten};
+    var d=Object.assign({},x),id;
+    if(tab==="auftraege"){id=/^o/.test(String(d.id))?String(d.id):"o"+d.id}
+    else if(tab==="touren"){var n=d.num!=null?d.num:d.id;id=/^t/.test(String(n))?String(n):"t"+n;if(d.num==null)d.num=+String(n).replace(/\D/g,"")}
+    else id=String(d.id);
+    if(tab==="fahrzeuge"||tab==="vorschlaege")delete d.id;
+    if(!id||/undefined|null/.test(id))return null;
+    return {id:id,daten:d};
+  }
+  function lesen(roh){
+    var aus={};TABELLEN.forEach(function(t){aus[t[0]]=[]});
+    Object.keys(roh||{}).forEach(function(k){
+      var tab=ALIAS[k]||k;if(!aus[tab])return;
+      var liste=Array.isArray(roh[k])?roh[k]:(roh[k]&&typeof roh[k]==="object"?Object.keys(roh[k]).map(function(id){return {id:id,daten:roh[k][id]}}):[]);
+      liste.forEach(function(x){var z=kennung(tab,x);if(z)aus[tab].push(z)});
+    });
+    return aus;
+  }
+
+  sb.auth.getSession().then(function(r){
+    var s=r.data&&r.data.session;
+    if(!s){zeige('Bitte zuerst in <a href="/">Swertz Dispo</a> als Zentrale anmelden und diese Seite dann neu laden.',"err");return}
+    return sb.from("profile").select("rolle,name").eq("id",s.user.id).maybeSingle().then(function(p){
+      if(p.error||!p.data||p.data.rolle!=="zentrale"){zeige("Nur die Zentrale darf Daten übernehmen. Angemeldet: "+esc(s.user.email),"err");return}
+      zeige("Angemeldet als Zentrale ("+esc(p.data.name||s.user.email)+").","ok");
+      document.getElementById("schritt").hidden=false;
+    });
+  });
+
+  var daten=null;
+  document.getElementById("datei").onchange=function(e){
+    var f=e.target.files[0];if(!f)return;
+    f.text().then(function(t){
+      try{daten=lesen(JSON.parse(t))}catch(er){document.getElementById("vorschau").innerHTML='<p class="err">Die Datei ist keine gültige Sicherungsdatei (JSON).</p>';return}
+      var summe=0,html="<table>";
+      TABELLEN.forEach(function(t){var n=daten[t[0]].length;summe+=n;html+="<tr><td>"+t[1]+'</td><td class="r">'+n+"</td></tr>"});
+      document.getElementById("vorschau").innerHTML="<p style=\"margin-top:16px\"><b>"+esc(f.name)+"</b> enthält:</p>"+html+"</table>";
+      document.getElementById("los").hidden=!summe;
+    });
+  };
+
+  document.getElementById("los").onclick=function(){
+    var knopf=this;knopf.disabled=true;var erg=document.getElementById("ergebnis");
+    var bericht=[],fehlerZahl=0;
+    var kette=Promise.resolve();
+    TABELLEN.forEach(function(t){kette=kette.then(function(){
+      var tab=t[0],zeilen=daten[tab];if(!zeilen.length)return;
+      erg.textContent=t[1]+" werden übernommen …";
+      var ids=zeilen.map(function(z){return z.id}),vorhanden=new Set(),stuecke=[];
+      for(var i=0;i<ids.length;i+=200)stuecke.push(ids.slice(i,i+200));
+      return stuecke.reduce(function(p,teil){return p.then(function(){
+        return sb.from(tab).select("id").in("id",teil).then(function(r){if(r.error)throw r.error;r.data.forEach(function(x){vorhanden.add(x.id)})});
+      })},Promise.resolve()).then(function(){
+        var neu=zeilen.filter(function(z,i){return !vorhanden.has(z.id)&&ids.indexOf(z.id)===i});
+        var bloecke=[];for(var i=0;i<neu.length;i+=200)bloecke.push(neu.slice(i,i+200));
+        return bloecke.reduce(function(p,b){return p.then(function(){
+          return sb.from(tab).insert(b).then(function(r){if(r.error)throw r.error});
+        })},Promise.resolve()).then(function(){
+          bericht.push(t[1]+": "+neu.length+" neu, "+(zeilen.length-neu.length)+" schon vorhanden");
+        });
+      }).catch(function(e){fehlerZahl++;bericht.push(t[1]+": FEHLER – "+(e.message||e))});
+    })});
+    kette.then(function(){
+      erg.className="m "+(fehlerZahl?"err":"ok");
+      erg.innerHTML=(fehlerZahl?"Mit Fehlern beendet:":"Fertig:")+"<br>"+bericht.map(esc).join("<br>");
+      knopf.disabled=false;
+    });
+  };
+})();
+</script>
+</body>
+</html>

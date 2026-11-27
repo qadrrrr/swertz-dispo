@@ -52,6 +52,14 @@ Plan:
 9. Erst Moers eine Woche parallel testen, dann die anderen Standorte.
 10. Bestehende Daten (Fahrzeuge, Baustellen, Aufträge) aus dem alten Claude-Artefakt übernehmen.
 
+## Stand Supabase-Umzug (vorbereitet, noch nicht eingerichtet)
+- Anleitung für Qadr: `docs/SUPABASE-EINRICHTUNG.md`.
+- `supabase/schema.sql`: Tabellen je Dokument (`id`, `daten` jsonb; `sto`/`ursprung`/`von`/`an` per Trigger aus `daten`), RLS, Sperren-Funktion `sperre_holen`, Bucket `lieferscheine`. Test: `supabase/tests/zugriff_test.sql` (lokal mit `supabase_nachbildung.sql` vorab).
+- `swertz-cloud.js` stellt `window.claude.use(...)` mit Supabase dahinter bereit (nur wenn `cloud-config.js` ausgefüllt und nicht in Claude). Die Programmlogik in `index.html` bleibt dadurch unverändert; dort nur: Skripte im `<head>`, Abmelden über `SW_CLOUD`, Standortwahl auf erlaubte Standorte begrenzt.
+- Dateien: `/_blob/<pfad>` wird vom Service Worker `sw-blob.js` mit der Anmeldung aus dem privaten Bucket geholt (Seite muss im Wurzelverzeichnis der Domain liegen).
+- Edge Functions `scan` (Anthropic, Secret `ANTHROPIC_API_KEY`) und `tomtom` (Secret `TOMTOM_API_KEY`) liefern dieselben Formate wie bisher in Claude.
+- Offen: Lieferscheine (Klärung durch Qadr), Export der Altdaten aus dem Claude-Artefakt.
+
 ## Arbeitsweise
 - Vor größeren Umbauten kurz den Plan erklären.
 - Nach jeder Änderung prüfen, dass alle oben genannten Funktionen weiter gehen.
