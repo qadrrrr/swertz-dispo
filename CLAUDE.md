@@ -1,6 +1,6 @@
 # Swertz Dispo – Projektwissen für Claude
 
-Antworte immer auf Deutsch. Der Nutzer heißt Qadr (Anrede „Guten Tag, Qadr“). Er arbeitet bei Swertz (Baustoff-Großhandel, mehrere Standorte am Niederrhein) und programmiert nicht selbst: Erkläre Schritte einfach, ohne Fachjargon, und nenne Klickwege genau.
+Antworte immer auf Deutsch. Der Nutzer heißt Qadr (Anrede „Guten Tag, Qadr“). In Texten, die er an Kollegen weitergibt (Nachrichten, E-Mails, Anschreiben), mit „Orcun“ unterschreiben bzw. diesen Namen verwenden. Er arbeitet bei Swertz (Baustoff-Großhandel, mehrere Standorte am Niederrhein) und programmiert nicht selbst: Erkläre Schritte einfach, ohne Fachjargon, und nenne Klickwege genau.
 
 ## Was das Programm ist
 Dispositions-Programm für alle Swertz-Standorte. Aktuell eine einzige Datei `index.html` (HTML, CSS und JavaScript in einer Datei, ca. 1600 Zeilen). Sie lief bisher als Claude-Artefakt und nutzt dort die Plattform-Schnittstellen `window.claude.use("db" | "user" | "assets" | "sample" | "mcp")`. Diese gibt es außerhalb von Claude NICHT – sie müssen beim Umzug ersetzt werden (siehe unten).
