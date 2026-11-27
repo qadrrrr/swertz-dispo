@@ -98,7 +98,7 @@ Beide Funktionen laufen bei Supabase. Die Schlüssel bleiben dort und erscheinen
 
 1. Kopieren Sie in Supabase unter **„Project Settings“** → **„API“** (bzw. **„Data API“** / **„API Keys“**) zwei Angaben:
    - die **Project URL**, zum Beispiel `https://abcdefgh.supabase.co`
-   - den **„anon“ / „public“**-Schlüssel. Dieser Schlüssel ist öffentlich und darf ins Programm. **Nicht** den „service_role“-Schlüssel nehmen!
+   - den **„publishable“**-Schlüssel (beginnt mit `sb_publishable_…`; bei älteren Projekten „anon public“). Dieser Schlüssel ist öffentlich und darf ins Programm. **Nicht** den „secret“- bzw. „service_role“-Schlüssel nehmen!
 2. Öffnen Sie in GitHub die Datei [`cloud-config.js`](../cloud-config.js), klicken Sie auf den **Stift** („Edit this file“), tragen Sie beide Angaben zwischen die Anführungszeichen ein und klicken Sie auf **„Commit changes“**.
    Sie können mir die beiden Angaben auch im Chat geben, dann trage ich sie ein. Beide sind öffentlich.
 
