@@ -646,7 +646,9 @@ function openTour(id){
   document.getElementById("mDocs").onclick=e=>{const b=e.target.closest("[data-del]");if(b){t.docs.splice(+b.dataset.del,1);saveTour(t);rd();refresh()}};
 }
 function close(){ov.classList.remove("show");if(onClose){const f=onClose;onClose=null;f()}}
-ov.onclick=e=>{if(e.target===ov)close()};document.addEventListener("keydown",e=>{if(e.key==="Escape")close()});
+/* Nur schließen, wenn Klick auf den dunklen Hintergrund begann und endete – nicht beim Markieren von Text, das im Eingabefeld beginnt */
+let ovDown=null;ov.addEventListener("mousedown",e=>{ovDown=e.target});ov.addEventListener("touchstart",e=>{ovDown=e.target},{passive:true});
+ov.onclick=e=>{const st=ovDown;ovDown=null;if(e.target===ov&&st===ov)close()};document.addEventListener("keydown",e=>{if(e.key==="Escape")close()});
 document.body.addEventListener("click",e=>{const b=e.target.closest("[data-t]");if(b){if(b.tagName==="A")e.preventDefault();if(!md.contains(b)||b.tagName==="A")openTour(b.dataset.t);return}const a=e.target.closest("a[data-ao]");if(a&&md.contains(a)){e.preventDefault();openOrder(a.dataset.ao)}});
 
 /* Tourenplaner: Scan-Import + Tagesplanung mit Ladeplan */
