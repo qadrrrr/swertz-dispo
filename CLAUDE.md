@@ -1,6 +1,6 @@
 # Swertz Dispo – Projektwissen für Claude
 
-Antworte immer auf Deutsch. Der Nutzer heißt Qadr (Anrede „Guten Tag, Qadr“). Er arbeitet bei Swertz (Baustoff-Großhandel, mehrere Standorte am Niederrhein) und programmiert nicht selbst: Erkläre Schritte einfach, ohne Fachjargon, und nenne Klickwege genau.
+Antworte immer auf Deutsch. Der Nutzer heißt Qadr (Anrede „Guten Tag, Qadr“). In Texten, die er an Kollegen weitergibt (Nachrichten, E-Mails, Anschreiben), mit „Orcun“ unterschreiben bzw. diesen Namen verwenden. Er arbeitet bei Swertz (Baustoff-Großhandel, mehrere Standorte am Niederrhein) und programmiert nicht selbst: Erkläre Schritte einfach, ohne Fachjargon, und nenne Klickwege genau.
 
 ## Was das Programm ist
 Dispositions-Programm für alle Swertz-Standorte. Aktuell eine einzige Datei `index.html` (HTML, CSS und JavaScript in einer Datei, ca. 1600 Zeilen). Sie lief bisher als Claude-Artefakt und nutzt dort die Plattform-Schnittstellen `window.claude.use("db" | "user" | "assets" | "sample" | "mcp")`. Diese gibt es außerhalb von Claude NICHT – sie müssen beim Umzug ersetzt werden (siehe unten).
@@ -52,7 +52,10 @@ Plan:
 9. Erst Moers eine Woche parallel testen, dann die anderen Standorte.
 10. Bestehende Daten (Fahrzeuge, Baustellen, Aufträge) aus dem alten Claude-Artefakt übernehmen.
 
-## Stand Supabase-Umzug (vorbereitet, noch nicht eingerichtet)
+## Stand Supabase-Umzug (eingerichtet am 27.11.2026, Testphase)
+- Eingerichtet und von Qadr bestätigt: Supabase-Projekt (Frankfurt, URL in `cloud-config.js`), `schema.sql` ausgeführt, Zugriffstest bestanden, Edge Functions `scan` + `tomtom` mit Secrets, Selbstregistrierung aus, Netlify unter https://swertz-dispo.netlify.app (veröffentlicht `main`), Qadr als `zentrale` angemeldet.
+- Testphase noch mit privaten Konten (Supabase, Anthropic, TomTom): nur Testdaten, keine echten Kundendaten bis zur Freigabe. Danach Wechsel auf Firmenkonten (Secrets austauschen, Projekt übertragen), Pro-Tarif, SMTP.
+- Noch zu testen: Scan, TomTom, Einladung eines Standort-Nutzers.
 - Anleitung für Qadr: `docs/SUPABASE-EINRICHTUNG.md`.
 - `supabase/schema.sql`: Tabellen je Dokument (`id`, `daten` jsonb; `sto`/`ursprung`/`von`/`an` per Trigger aus `daten`), RLS, Sperren-Funktion `sperre_holen`, Bucket `lieferscheine`. Test: `supabase/tests/zugriff_test.sql` (lokal mit `supabase_nachbildung.sql` vorab).
 - `swertz-cloud.js` stellt `window.claude.use(...)` mit Supabase dahinter bereit (nur wenn `cloud-config.js` ausgefüllt und nicht in Claude). Die Programmlogik in `index.html` bleibt dadurch unverändert; dort nur: Skripte im `<head>`, Abmelden über `SW_CLOUD`, Standortwahl auf erlaubte Standorte begrenzt.
